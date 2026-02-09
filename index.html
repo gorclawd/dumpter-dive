@@ -293,6 +293,7 @@
                 <span id="gorBalance">0</span> $GOR
             </div>
             <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Backpack</button>
+            <button class="bet-btn" id="disconnectBtn" style="display:none;padding:8px 12px;" onclick="disconnectWallet()">✕</button>
         </div>
     </div>
 
@@ -467,8 +468,31 @@
             document.getElementById('connectBtn').textContent = wallet.slice(0,4) + '...' + wallet.slice(-4);
             document.getElementById('connectBtn').classList.add('connected');
             document.getElementById('balanceDisplay').style.display = 'block';
+            document.getElementById('disconnectBtn').style.display = 'block';
             document.getElementById('playBtn').textContent = 'SELECT BET';
             await checkBalance();
+        }
+
+        async function disconnectWallet() {
+            try {
+                if (window.backpack) await window.backpack.disconnect();
+                else if (window.solana) await window.solana.disconnect();
+                else if (window.solflare) await window.solflare.disconnect();
+            } catch (e) {}
+            
+            wallet = null;
+            balance = 0;
+            selectedBet = 0;
+            document.getElementById('connectBtn').textContent = 'Connect Backpack';
+            document.getElementById('connectBtn').classList.remove('connected');
+            document.getElementById('balanceDisplay').style.display = 'none';
+            document.getElementById('disconnectBtn').style.display = 'none';
+            document.getElementById('gorBalance').textContent = '0';
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('playBtn').textContent = 'Connect Wallet to Play';
+            document.getElementById('currentBet').textContent = 'Select bet amount';
+            document.querySelectorAll('.bet-btn[data-amount]').forEach(btn => btn.classList.remove('selected'));
+            enableBags(false);
         }
 
         async function checkBalance() {
