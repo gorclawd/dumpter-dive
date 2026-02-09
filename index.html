@@ -38,9 +38,11 @@
             border-radius: 20px;
             font-weight: bold;
             color: #00ff88;
+            cursor: pointer;
         }
+        .balance:hover { background: linear-gradient(145deg, #3a3a4a, #2a2a3a); }
         .connect-btn {
-            background: linear-gradient(145deg, #9945FF, #7B3FE4);
+            background: linear-gradient(145deg, #e33e3e, #c73535);
             color: #fff;
             border: none;
             padding: 10px 20px;
@@ -49,7 +51,7 @@
             font-weight: bold;
             transition: all 0.3s ease;
         }
-        .connect-btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(153, 69, 255, 0.4); }
+        .connect-btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(227, 62, 62, 0.4); }
         .connect-btn.connected { background: linear-gradient(145deg, #00ff88, #00cc6a); color: #000; }
         h1 {
             font-size: 2.5em;
@@ -61,6 +63,15 @@
             color: #888;
             margin-bottom: 30px;
             font-size: 1.1em;
+        }
+        .network-badge {
+            background: linear-gradient(145deg, #ff6b35, #f7931a);
+            color: #000;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
         .bet-section {
             display: flex;
@@ -80,7 +91,7 @@
             font-size: 1em;
             transition: all 0.3s ease;
         }
-        .bet-btn:hover { border-color: #00ff88; transform: translateY(-2px); }
+        .bet-btn:hover:not(:disabled) { border-color: #00ff88; transform: translateY(-2px); }
         .bet-btn.selected { border-color: #00ff88; background: linear-gradient(145deg, #1a4d2e, #0d2818); }
         .bet-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .current-bet {
@@ -131,10 +142,6 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
-        @keyframes winPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.5); }
-            50% { box-shadow: 0 0 40px rgba(0, 255, 136, 0.8); }
-        }
         .result {
             font-size: 1.8em;
             min-height: 50px;
@@ -168,7 +175,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        button.play-btn:hover {
+        button.play-btn:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 10px 30px rgba(0, 255, 136, 0.4);
         }
@@ -232,10 +239,27 @@
             border-radius: 20px;
             text-align: center;
             max-width: 400px;
+            width: 90%;
         }
         .modal-content h2 { margin-bottom: 20px; }
         .modal-content p { color: #888; margin-bottom: 20px; }
-        .modal-content input {
+        .deposit-addr {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.85em;
+            cursor: pointer;
+            border: 2px solid #333;
+            transition: all 0.3s;
+        }
+        .deposit-addr:hover { border-color: #00ff88; }
+        .copied { border-color: #00ff88 !important; }
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-row button { flex: 1; }
+        .withdraw-input {
             width: 100%;
             padding: 12px;
             border-radius: 10px;
@@ -244,24 +268,37 @@
             color: #fff;
             font-size: 1em;
             margin-bottom: 15px;
+            text-align: center;
         }
-        .modal-content input:focus { border-color: #00ff88; outline: none; }
-        .deposit-info { font-size: 0.9em; color: #666; margin-top: 10px; }
+        .withdraw-input:focus { border-color: #00ff88; outline: none; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-msg { color: #ff4444; font-size: 0.9em; margin-top: 10px; }
+        .success-msg { color: #00ff88; font-size: 0.9em; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">🗑️ Dumpster Dive</div>
         <div class="wallet-section">
-            <div class="balance" id="balanceDisplay" style="display:none;">
+            <div class="balance" id="balanceDisplay" style="display:none;" onclick="showBalanceModal()">
                 <span id="gorBalance">0</span> $GOR
             </div>
-            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Backpack</button>
         </div>
     </div>
 
     <h1>🗑️ Dumpster Dive</h1>
     <p class="subtitle">Pick a bag. One has treasure. Win 2x your bet!</p>
+    <div class="network-badge">🗑️ GORBAGANA CHAIN</div>
     
     <div class="multiplier-info">
         🎰 Win = <strong>2x payout</strong> | 33% chance | House edge: 33%
@@ -284,12 +321,12 @@
             <div class="stat-label">WINS</div>
         </div>
         <div class="stat">
-            <div class="stat-value" id="total">0</div>
-            <div class="stat-label">PLAYS</div>
+            <div class="stat-value" id="losses">0</div>
+            <div class="stat-label">LOSSES</div>
         </div>
         <div class="stat">
-            <div class="stat-value" id="profit">0</div>
-            <div class="stat-label">PROFIT (GOR)</div>
+            <div class="stat-value" id="wagered">0</div>
+            <div class="stat-label">WAGERED</div>
         </div>
     </div>
     
@@ -307,7 +344,7 @@
 
     <div class="leaderboard" id="leaderboard">
         <h3>🏆 Top Degens</h3>
-        <div id="lbContent">Connect wallet to see leaderboard</div>
+        <div id="lbContent">Loading...</div>
     </div>
     
     <div class="footer">
@@ -317,138 +354,159 @@
     <!-- Deposit Modal -->
     <div class="modal" id="depositModal">
         <div class="modal-content">
-            <h2>🗑️ Deposit $GOR</h2>
-            <p>Send GOR to play. Min: 10 GOR</p>
-            <div style="background:#1a1a1a;padding:15px;border-radius:10px;margin-bottom:15px;">
-                <div style="font-size:0.8em;color:#666;margin-bottom:5px;">House Wallet:</div>
-                <div style="font-family:monospace;font-size:0.85em;word-break:break-all;" id="houseWallet">4AMMi7z1U1duRhnSo9ELbM1MUmnKwPxspMTJFN2Lut6P</div>
+            <h2>💰 Deposit $GOR</h2>
+            <p>Send GOR to the house wallet to play</p>
+            <div style="font-size:0.8em;color:#666;margin-bottom:5px;">House Wallet (click to copy):</div>
+            <div class="deposit-addr" id="houseAddr" onclick="copyAddr()">Loading...</div>
+            <p style="font-size:0.85em;">Min deposit: 10 GOR</p>
+            <div class="btn-row">
+                <button class="bet-btn" onclick="checkBalance()">Check Balance</button>
+                <button class="bet-btn" onclick="closeModal('depositModal')">Close</button>
             </div>
-            <button class="connect-btn" onclick="checkDeposit()" style="width:100%;margin-bottom:10px;">I've Sent GOR - Check Balance</button>
-            <button class="bet-btn" onclick="closeModal()" style="width:100%;">Cancel</button>
-            <div class="deposit-info">Your deposits are tracked by wallet address. Withdraw anytime!</div>
+            <div id="depositMsg"></div>
+        </div>
+    </div>
+
+    <!-- Balance Modal -->
+    <div class="modal" id="balanceModal">
+        <div class="modal-content">
+            <h2>💰 Your Balance</h2>
+            <div style="font-size:2.5em;color:#00ff88;margin:20px 0;" id="balanceModalAmount">0 GOR</div>
+            <div class="btn-row">
+                <button class="connect-btn" onclick="showDepositModal()">Deposit</button>
+                <button class="connect-btn" style="background:linear-gradient(145deg,#ff6b35,#f7931a);" onclick="showWithdrawModal()">Withdraw</button>
+            </div>
+            <button class="bet-btn" style="width:100%;margin-top:15px;" onclick="closeModal('balanceModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-content">
+            <h2>💸 Withdraw $GOR</h2>
+            <p>Available: <span id="withdrawAvailable">0</span> GOR</p>
+            <input type="number" class="withdraw-input" id="withdrawAmount" placeholder="Amount to withdraw">
+            <button class="bet-btn" style="width:100%;margin-bottom:10px;" onclick="withdrawMax()">Withdraw Max</button>
+            <div class="btn-row">
+                <button class="connect-btn" onclick="doWithdraw()">Withdraw</button>
+                <button class="bet-btn" onclick="closeModal('withdrawModal')">Cancel</button>
+            </div>
+            <div id="withdrawMsg"></div>
         </div>
     </div>
 
     <script>
-        // Config
-        const HOUSE_WALLET = '4AMMi7z1U1duRhnSo9ELbM1MUmnKwPxspMTJFN2Lut6P';
-        const RPC_URL = 'https://mainnetbeta-rpc.eclipse.xyz';
+        // Config - Update this to your server URL
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3001' 
+            : 'https://dumpster-api.gorbagana.xyz'; // Update when deployed
+        const GOR_DECIMALS = 9;
+        const LAMPORTS_PER_GOR = 10 ** GOR_DECIMALS;
         const MULTIPLIER = 2;
-        
+
         // State
         let wallet = null;
         let balance = 0;
         let selectedBet = 0;
-        let wins = 0;
-        let total = 0;
-        let profit = 0;
-        let currentStreak = 0;
-        let bestStreak = 0;
-        let winningBag = -1;
         let gameActive = false;
+        let houseWallet = '';
 
         const prizes = ['💎', '🪙', '💰', '🏆', '⭐'];
         const trash = ['🦴', '🍌', '🧻', '🪳', '💀'];
 
-        // Load stats from localStorage
-        function loadStats() {
-            if (wallet) {
-                const key = `dd_${wallet.slice(0,8)}`;
-                wins = parseInt(localStorage.getItem(`${key}_wins`) || '0');
-                total = parseInt(localStorage.getItem(`${key}_total`) || '0');
-                profit = parseInt(localStorage.getItem(`${key}_profit`) || '0');
-                currentStreak = parseInt(localStorage.getItem(`${key}_streak`) || '0');
-                bestStreak = parseInt(localStorage.getItem(`${key}_best`) || '0');
-                balance = parseInt(localStorage.getItem(`${key}_balance`) || '0');
+        // Init
+        async function init() {
+            try {
+                const res = await fetch(`${API_URL}/api/house`);
+                const data = await res.json();
+                houseWallet = data.wallet;
+                document.getElementById('houseAddr').textContent = houseWallet;
+            } catch (e) {
+                console.error('Failed to get house wallet:', e);
             }
-            updateUI();
-        }
-
-        function saveStats() {
-            if (wallet) {
-                const key = `dd_${wallet.slice(0,8)}`;
-                localStorage.setItem(`${key}_wins`, wins);
-                localStorage.setItem(`${key}_total`, total);
-                localStorage.setItem(`${key}_profit`, profit);
-                localStorage.setItem(`${key}_streak`, currentStreak);
-                localStorage.setItem(`${key}_best`, bestStreak);
-                localStorage.setItem(`${key}_balance`, balance);
-                updateLeaderboard();
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('wins').textContent = wins;
-            document.getElementById('total').textContent = total;
-            document.getElementById('profit').textContent = profit >= 0 ? `+${profit}` : profit;
-            document.getElementById('profit').style.color = profit >= 0 ? '#00ff88' : '#ff4444';
-            document.getElementById('gorBalance').textContent = balance;
-            
-            if (currentStreak >= 2) {
-                document.getElementById('streak').textContent = `🔥 ${currentStreak} win streak! (Best: ${bestStreak})`;
-            } else if (bestStreak >= 2) {
-                document.getElementById('streak').textContent = `Best streak: ${bestStreak}`;
-            } else {
-                document.getElementById('streak').textContent = '';
-            }
+            loadLeaderboard();
         }
 
         async function connectWallet() {
-            if (window.solana && window.solana.isPhantom) {
+            // Check for Backpack
+            if (window.backpack) {
+                try {
+                    await window.backpack.connect();
+                    wallet = window.backpack.publicKey.toString();
+                    onWalletConnected();
+                } catch (err) {
+                    console.error('Backpack error:', err);
+                }
+            } 
+            // Fallback to Phantom
+            else if (window.solana && window.solana.isPhantom) {
                 try {
                     const resp = await window.solana.connect();
                     wallet = resp.publicKey.toString();
-                    document.getElementById('connectBtn').textContent = wallet.slice(0,4) + '...' + wallet.slice(-4);
-                    document.getElementById('connectBtn').classList.add('connected');
-                    document.getElementById('balanceDisplay').style.display = 'block';
-                    document.getElementById('playBtn').disabled = false;
-                    document.getElementById('playBtn').textContent = 'SELECT BET & DIVE';
-                    loadStats();
-                    enableBags(false);
-                    
-                    // Give 100 GOR to new players
-                    if (balance === 0) {
-                        balance = 100;
-                        saveStats();
-                        document.getElementById('gorBalance').textContent = balance;
-                        alert('🎁 Welcome bonus: 100 GOR credited! Good luck degen!');
-                    }
+                    onWalletConnected();
                 } catch (err) {
-                    console.error(err);
+                    console.error('Phantom error:', err);
                 }
-            } else if (window.solflare) {
+            }
+            // Fallback to Solflare
+            else if (window.solflare) {
                 try {
                     await window.solflare.connect();
                     wallet = window.solflare.publicKey.toString();
-                    document.getElementById('connectBtn').textContent = wallet.slice(0,4) + '...' + wallet.slice(-4);
-                    document.getElementById('connectBtn').classList.add('connected');
-                    document.getElementById('balanceDisplay').style.display = 'block';
-                    document.getElementById('playBtn').disabled = false;
-                    document.getElementById('playBtn').textContent = 'SELECT BET & DIVE';
-                    loadStats();
-                    enableBags(false);
-                    
-                    if (balance === 0) {
-                        balance = 100;
-                        saveStats();
-                        document.getElementById('gorBalance').textContent = balance;
-                        alert('🎁 Welcome bonus: 100 GOR credited! Good luck degen!');
-                    }
+                    onWalletConnected();
                 } catch (err) {
-                    console.error(err);
+                    console.error('Solflare error:', err);
                 }
-            } else {
-                window.open('https://phantom.app/', '_blank');
+            }
+            else {
+                window.open('https://www.backpack.app/', '_blank');
+            }
+        }
+
+        async function onWalletConnected() {
+            document.getElementById('connectBtn').textContent = wallet.slice(0,4) + '...' + wallet.slice(-4);
+            document.getElementById('connectBtn').classList.add('connected');
+            document.getElementById('balanceDisplay').style.display = 'block';
+            document.getElementById('playBtn').textContent = 'SELECT BET';
+            await checkBalance();
+        }
+
+        async function checkBalance() {
+            if (!wallet) return;
+            try {
+                document.getElementById('depositMsg').innerHTML = '<div class="loading"></div>';
+                const res = await fetch(`${API_URL}/api/balance?wallet=${wallet}`);
+                const data = await res.json();
+                balance = data.balance;
+                updateBalanceDisplay();
+                document.getElementById('depositMsg').innerHTML = '<div class="success-msg">Balance updated!</div>';
+            } catch (e) {
+                document.getElementById('depositMsg').innerHTML = '<div class="error-msg">Failed to check balance</div>';
+            }
+        }
+
+        function updateBalanceDisplay() {
+            const gorBalance = Math.floor(balance / LAMPORTS_PER_GOR);
+            document.getElementById('gorBalance').textContent = gorBalance;
+            document.getElementById('balanceModalAmount').textContent = gorBalance + ' GOR';
+            document.getElementById('withdrawAvailable').textContent = gorBalance;
+            
+            if (balance > 0) {
+                document.getElementById('playBtn').disabled = false;
             }
         }
 
         function selectBet(amount) {
-            if (!wallet) return;
-            if (amount > balance) {
-                document.getElementById('depositModal').classList.add('show');
+            if (!wallet) {
+                connectWallet();
                 return;
             }
-            selectedBet = amount;
+            const amountLamports = amount * LAMPORTS_PER_GOR;
+            if (amountLamports > balance) {
+                showDepositModal();
+                return;
+            }
+            selectedBet = amountLamports;
             document.querySelectorAll('.bet-btn').forEach(btn => {
                 btn.classList.toggle('selected', parseInt(btn.dataset.amount) === amount);
             });
@@ -460,15 +518,12 @@
         function startRound() {
             if (!wallet || selectedBet === 0 || selectedBet > balance) return;
             
-            balance -= selectedBet;
-            document.getElementById('gorBalance').textContent = balance;
-            
             gameActive = true;
-            winningBag = Math.floor(Math.random() * 3);
             document.getElementById('result').textContent = '';
             document.getElementById('result').className = 'result';
             document.getElementById('payout').textContent = '';
             document.getElementById('playBtn').disabled = true;
+            document.getElementById('playBtn').textContent = 'Pick a bag...';
             
             enableBags(true);
         }
@@ -485,111 +540,188 @@
             });
         }
 
-        function pickBag(index) {
+        async function pickBag(index) {
             if (!gameActive) return;
             gameActive = false;
-            total++;
             
-            const bags = document.querySelectorAll('.trash-bag');
+            document.getElementById('playBtn').innerHTML = '<div class="loading"></div>';
             
-            bags.forEach((bag, i) => {
-                bag.classList.add('revealed');
-                if (i === winningBag) {
-                    bag.classList.add('winner');
-                    bag.textContent = prizes[Math.floor(Math.random() * prizes.length)];
-                } else {
-                    bag.classList.add('loser');
-                    bag.textContent = trash[Math.floor(Math.random() * trash.length)];
+            try {
+                const res = await fetch(`${API_URL}/api/play`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet,
+                        betAmount: selectedBet,
+                        chosenBag: index
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.error) {
+                    document.getElementById('result').textContent = data.error;
+                    document.getElementById('result').className = 'result lose';
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('playBtn').textContent = 'TRY AGAIN';
+                    return;
                 }
-                bag.onclick = null;
-            });
-            
-            const result = document.getElementById('result');
-            const payout = document.getElementById('payout');
-            
-            if (index === winningBag) {
-                const winAmount = selectedBet * MULTIPLIER;
-                wins++;
-                profit += (winAmount - selectedBet);
-                balance += winAmount;
-                currentStreak++;
-                if (currentStreak > bestStreak) bestStreak = currentStreak;
-                result.textContent = '🎉 TREASURE FOUND!';
-                result.className = 'result win';
-                payout.textContent = `+${winAmount} GOR`;
-                payout.style.color = '#00ff88';
-            } else {
-                profit -= selectedBet;
-                currentStreak = 0;
-                result.textContent = '💀 Just trash...';
-                result.className = 'result lose';
-                payout.textContent = `-${selectedBet} GOR`;
-                payout.style.color = '#ff4444';
+                
+                // Update balance
+                balance = data.newBalance;
+                updateBalanceDisplay();
+                
+                // Show result
+                const bags = document.querySelectorAll('.trash-bag');
+                bags.forEach((bag, i) => {
+                    bag.classList.add('revealed');
+                    if (i === data.winningBag) {
+                        bag.classList.add('winner');
+                        bag.textContent = prizes[Math.floor(Math.random() * prizes.length)];
+                    } else {
+                        bag.classList.add('loser');
+                        bag.textContent = trash[Math.floor(Math.random() * trash.length)];
+                    }
+                    bag.onclick = null;
+                });
+                
+                const result = document.getElementById('result');
+                const payout = document.getElementById('payout');
+                
+                if (data.won) {
+                    result.textContent = '🎉 TREASURE FOUND!';
+                    result.className = 'result win';
+                    payout.textContent = `+${data.payout / LAMPORTS_PER_GOR} GOR`;
+                    payout.style.color = '#00ff88';
+                } else {
+                    result.textContent = '💀 Just trash...';
+                    result.className = 'result lose';
+                    payout.textContent = `-${selectedBet / LAMPORTS_PER_GOR} GOR`;
+                    payout.style.color = '#ff4444';
+                }
+                
+                // Update stats
+                if (data.stats) {
+                    document.getElementById('wins').textContent = data.stats.wins || 0;
+                    document.getElementById('losses').textContent = data.stats.losses || 0;
+                    document.getElementById('wagered').textContent = Math.floor((data.stats.wagered || 0) / LAMPORTS_PER_GOR);
+                }
+                
+                loadLeaderboard();
+                
+            } catch (e) {
+                document.getElementById('result').textContent = 'Network error. Try again.';
+                document.getElementById('result').className = 'result lose';
             }
-            
-            document.getElementById('gorBalance').textContent = balance;
-            saveStats();
-            updateUI();
             
             document.getElementById('playBtn').disabled = false;
             document.getElementById('playBtn').textContent = 'DIVE AGAIN';
         }
 
-        function closeModal() {
-            document.getElementById('depositModal').classList.remove('show');
-        }
-
-        function checkDeposit() {
-            // In production, this would check actual on-chain deposits
-            // For now, simulate a deposit
-            alert('Deposit checking coming soon! For now, enjoy your 100 GOR welcome bonus.');
-            closeModal();
-        }
-
-        function updateLeaderboard() {
-            // Get all players from localStorage
-            const players = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.endsWith('_profit')) {
-                    const addr = key.replace('dd_', '').replace('_profit', '');
-                    const p = parseInt(localStorage.getItem(key) || '0');
-                    const w = parseInt(localStorage.getItem(`dd_${addr}_wins`) || '0');
-                    const t = parseInt(localStorage.getItem(`dd_${addr}_total`) || '0');
-                    if (t > 0) {
-                        players.push({ addr, profit: p, wins: w, total: t });
-                    }
-                }
-            }
-            
-            players.sort((a, b) => b.profit - a.profit);
-            const top5 = players.slice(0, 5);
-            
-            if (top5.length === 0) {
-                document.getElementById('lbContent').innerHTML = '<div style="color:#666">No players yet. Be the first!</div>';
+        async function doWithdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            if (!amount || amount < 10) {
+                document.getElementById('withdrawMsg').innerHTML = '<div class="error-msg">Min withdrawal: 10 GOR</div>';
                 return;
             }
             
-            let html = '';
-            top5.forEach((p, i) => {
-                const profitClass = p.profit >= 0 ? '' : 'negative';
-                const profitStr = p.profit >= 0 ? `+${p.profit}` : p.profit;
-                html += `<div class="lb-row">
-                    <span class="lb-rank">#${i+1}</span>
-                    <span class="lb-addr">${p.addr}...</span>
-                    <span class="lb-profit ${profitClass}">${profitStr} GOR</span>
-                </div>`;
-            });
-            document.getElementById('lbContent').innerHTML = html;
+            const amountLamports = Math.floor(amount * LAMPORTS_PER_GOR);
+            if (amountLamports > balance) {
+                document.getElementById('withdrawMsg').innerHTML = '<div class="error-msg">Insufficient balance</div>';
+                return;
+            }
+            
+            document.getElementById('withdrawMsg').innerHTML = '<div class="loading"></div>';
+            
+            try {
+                const res = await fetch(`${API_URL}/api/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wallet, amount: amountLamports })
+                });
+                
+                const data = await res.json();
+                
+                if (data.error) {
+                    document.getElementById('withdrawMsg').innerHTML = `<div class="error-msg">${data.error}</div>`;
+                    return;
+                }
+                
+                balance = data.newBalance;
+                updateBalanceDisplay();
+                document.getElementById('withdrawMsg').innerHTML = `<div class="success-msg">Withdrawn! TX: ${data.signature.slice(0,8)}...</div>`;
+                document.getElementById('withdrawAmount').value = '';
+                
+            } catch (e) {
+                document.getElementById('withdrawMsg').innerHTML = '<div class="error-msg">Withdrawal failed</div>';
+            }
         }
 
-        // Init
-        updateLeaderboard();
-        
-        // Auto-connect if previously connected
-        if (window.solana && window.solana.isConnected) {
-            connectWallet();
+        function withdrawMax() {
+            const maxGor = Math.floor(balance / LAMPORTS_PER_GOR);
+            document.getElementById('withdrawAmount').value = maxGor;
         }
+
+        async function loadLeaderboard() {
+            try {
+                const res = await fetch(`${API_URL}/api/leaderboard`);
+                const data = await res.json();
+                
+                if (!data.leaderboard || data.leaderboard.length === 0) {
+                    document.getElementById('lbContent').innerHTML = '<div style="color:#666">No players yet. Be the first!</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.leaderboard.forEach((p, i) => {
+                    const wageredGor = Math.floor(p.wagered / LAMPORTS_PER_GOR);
+                    html += `<div class="lb-row">
+                        <span class="lb-rank">#${i+1}</span>
+                        <span class="lb-addr">${p.wallet}</span>
+                        <span class="lb-profit">${wageredGor} GOR</span>
+                    </div>`;
+                });
+                document.getElementById('lbContent').innerHTML = html;
+            } catch (e) {
+                document.getElementById('lbContent').innerHTML = '<div style="color:#666">Failed to load</div>';
+            }
+        }
+
+        function copyAddr() {
+            navigator.clipboard.writeText(houseWallet);
+            document.getElementById('houseAddr').classList.add('copied');
+            setTimeout(() => document.getElementById('houseAddr').classList.remove('copied'), 1000);
+        }
+
+        function showDepositModal() {
+            document.getElementById('depositModal').classList.add('show');
+            document.getElementById('depositMsg').innerHTML = '';
+        }
+
+        function showBalanceModal() {
+            document.getElementById('balanceModal').classList.add('show');
+        }
+
+        function showWithdrawModal() {
+            closeModal('balanceModal');
+            document.getElementById('withdrawModal').classList.add('show');
+            document.getElementById('withdrawMsg').innerHTML = '';
+            document.getElementById('withdrawAmount').value = '';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal.id);
+            });
+        });
+
+        // Init
+        init();
     </script>
 </body>
 </html>

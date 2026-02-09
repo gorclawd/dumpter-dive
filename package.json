@@ -1,0 +1,16 @@
+{
+  "name": "dumpster-dive",
+  "version": "1.0.0",
+  "description": "Dumpster Dive - Gorbagana gambling game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["gorbagana", "gambling", "gor"],
+  "author": "gorbro",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^6.0.0"
+  }
+}
