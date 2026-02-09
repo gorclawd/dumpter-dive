@@ -5,7 +5,7 @@ const { Connection, PublicKey, Keypair, Transaction, SystemProgram } = require('
 const bs58 = require('bs58').default || require('bs58');
 
 // Config
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const RPC_URL = 'https://rpc.trashscan.io';
 const HOUSE_PRIVATE_KEY = '2thseXAxnhbvsRtU7Jsv392QB71UvLaXcVd2nWrruHX4kKGhFYVDAnaj1TfzbcpCiEdvfxckntbjo4NJhQ45sLFD';
 const DB_PATH = path.join(__dirname, 'db.json');
